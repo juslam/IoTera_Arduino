@@ -1,38 +1,25 @@
-# 🌐 IoTera Ecosystem
+# 🌐 IoTera Arduino Library
 
 ![Arduino](https://img.shields.io/badge/-Arduino-00979D?style=flat-square&logo=Arduino&logoColor=white)
-![Flutter](https://img.shields.io/badge/-Flutter-02569B?style=flat-square&logo=Flutter&logoColor=white)
+![C++](https://img.shields.io/badge/-C++-00599C?style=flat-square&logo=c%2B%2B&logoColor=white)
 ![Firebase](https://img.shields.io/badge/-Firebase-FFCA28?style=flat-square&logo=firebase&logoColor=black)
-![Node.js](https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white)
 
-**IoTera** adalah ekosistem Internet of Things (IoT) *open-source* yang menyediakan solusi menyeluruh dari perangkat keras hingga aplikasi mobile. Proyek ini mempermudah koneksi perangkat ESP8266/ESP32 ke aplikasi seluler (Flutter) secara *real-time* menggunakan infrastruktur Firebase Realtime Database dan MQTT.
+**IoTera** adalah library Arduino (C++) untuk mempermudah koneksi perangkat ESP8266 dan ESP32 ke aplikasi seluler IoTera secara *real-time* menggunakan infrastruktur Firebase Realtime Database.
 
-*(**IoTera** is a complete open-source Internet of Things (IoT) ecosystem providing an end-to-end solution from hardware to mobile app. It simplifies connecting ESP8266/ESP32 devices to a mobile app (Flutter) in real-time using Firebase Realtime Database and MQTT infrastructure.)*
+*(**IoTera** is an Arduino C++ library to simplify connecting ESP8266/ESP32 devices to the IoTera mobile app in real-time using Firebase Realtime Database infrastructure.)*
 
 ---
 
 ## ✨ Fitur Utama / Key Features
 
-- 📱 **Dashboard Dinamis (Dynamic Dashboard):** Tambahkan, edit, dan atur tata letak widget (Tombol, Slider, Teks Sensor, Color Picker) langsung dari HP tanpa perlu mengubah kode UI/UX (Hardcode).
-- ⚡ **Real-time Control & Monitoring:** Kontrol perangkat dan pantau sensor dengan latensi rendah (Low Latency).
-- 👥 **Sistem Role Master & Client:** Bagikan akses alat secara aman ke pengguna lain menggunakan fitur pemindai QR Code. Client dapat diberi batasan akses (Read-Only).
-- ⏰ **Penjadwalan (Smart Scheduler):** Atur jadwal nyala/mati otomatis untuk hari dan jam tertentu (didukung oleh Node.js backend).
-- 📈 **Grafik Riwayat & Ekspor (Chart & CSV Export):** Simpan dan lihat riwayat data sensor, lalu ekspor ke file `.csv`.
-- 🔔 **Push Notifications:** Dapatkan peringatan (FCM) seketika jika nilai sensor melampaui batas yang Anda tentukan (*threshold*).
+- 🔌 **Mudah Digunakan (Easy to Use):** API yang sangat sederhana untuk inisialisasi WiFi dan Firebase.
+- ⚡ **Respon Cepat (Low Latency Stream):** Menerima perintah aksi (tombol/slider) dari aplikasi mobile IoTera secara instan.
+- 📡 **Pengiriman Data (Send Data):** Kirim nilai sensor ke dashboard aplikasi secara periodik dengan mudah.
+- 🔄 **Auto-Reconnect:** Terintegrasi dengan penanganan stream Firebase yang tangguh saat koneksi terputus.
 
 ---
 
-## 📁 Struktur Repositori / Repository Structure
-
-| Direktori / Directory | Deskripsi / Description |
-| --- | --- |
-| `/Library/IoTera` | Library C++ Arduino untuk ESP8266/ESP32. |
-| `/AppMobile` | Source Code Aplikasi Android & iOS berbasis Flutter. |
-| `/Server` | Script Backend Node.js (untuk Cron Job penjadwalan & Notifikasi FCM). |
-
----
-
-## 🚀 Cara Instalasi Library Arduino / Arduino Library Setup
+## 🚀 Cara Instalasi / Installation
 
 ### 1. Persiapan Dependensi (Dependencies)
 Library IoTera menggunakan arsitektur *Async* terbaru dari Firebase. Pastikan Anda menginstal dependensi berikut melalui **Arduino IDE > Library Manager**:
@@ -42,8 +29,9 @@ Library IoTera menggunakan arsitektur *Async* terbaru dari Firebase. Pastikan An
 *Catatan: Kami sangat merekomendasikan menggunakan **Core ESP32 versi 2.0.17** di Boards Manager untuk stabilitas kompilasi SSL/TLS.*
 
 ### 2. Instalasi IoTera
-1. Unduh folder `/Library/IoTera` dan jadikan file `.zip`.
-2. Di Arduino IDE, buka menu **Sketch** -> **Include Library** -> **Add .ZIP Library...** lalu pilih file yang baru saja diunduh.
+1. Di Arduino IDE, buka menu **Sketch** -> **Include Library** -> **Manage Libraries...**
+2. Cari **IoTera** dan klik Install. 
+*(Atau unduh repositori ini sebagai `.zip` dan tambahkan melalui **Add .ZIP Library...**)*
 
 ---
 
@@ -106,27 +94,9 @@ void loop() {
 
 ---
 
-## 📱 Aplikasi Mobile & Server / Mobile App & Server Setup
-
-### Flutter App
-1. Masuk ke direktori `AppMobile`.
-2. Jalankan perintah `flutter pub get`.
-3. Ganti konfigurasi di `lib/firebase_options.dart` dengan project Firebase milik Anda sendiri.
-4. Build ke perangkat dengan perintah `flutter run`.
-
-### Node.js Backend (Opsional, untuk Fitur Jadwal & Notifikasi)
-1. Masuk ke direktori `Server`.
-2. Jalankan `npm install` untuk mengunduh modul `mqtt`, `firebase-admin`, dan `node-cron`.
-3. Letakkan file `serviceAccountKey.json` Firebase Anda di direktori yang sama.
-4. Jalankan server dengan `node server.js` (Bisa di-hosting di VPS, Render, atau Railway).
-
----
-
-## 🛡️ Lisensi / License
+## ️ Lisensi / License
 Didistribusikan di bawah lisensi MIT. Lihat `LICENSE` untuk informasi lebih lanjut.
 
 *(Distributed under the MIT License. See `LICENSE` for more information.)*
 
 ---
-
-**IoTera Project** - *Control everything from anywhere.*
