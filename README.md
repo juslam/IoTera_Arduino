@@ -45,7 +45,7 @@ Berikut adalah struktur dasar untuk menghubungkan perangkat Anda ke platform IoT
 
 #define WIFI_SSID "WIFI_NAME"
 #define WIFI_PASS "WIFI_PASSWORD"
-#define DEVICE_KEY "SESSION_ID_FROM_MOBILE_APP"
+#define DEVICE_KEY "API_KEY_FROM_MOBILE_APP" // Salin dari menu "Kelola Perangkat & API"
 
 IoTeraDevice iotDevice;
 unsigned long previousMillis = 0;
@@ -56,8 +56,10 @@ void onAppCommand(String topic, String payload) {
   
   // Contoh jika HP mengirim perintah ke pin_D1
   if (topic.indexOf("pin_D1") != -1) {
-    if (payload == "TOGGLE") {
-      Serial.println("Mengubah status Relay/LED!");
+    if (payload == "1") {
+      Serial.println("Menyalakan Relay/LED!");
+    } else if (payload == "0") {
+      Serial.println("Mematikan Relay/LED!");
     }
   }
 }
