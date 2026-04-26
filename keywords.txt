@@ -1,0 +1,16 @@
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+IoTeraDevice	KEYWORD1
+CommandCallback	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+begin	KEYWORD2
+loop	KEYWORD2
+sendSensorData	KEYWORD2
+setCommandCallback	KEYWORD2
+parseJson	KEYWORD2
+
+# Catatan: Gunakan "Tab" untuk memisahkan nama keyword dengan KEYWORD1/KEYWORD2, jangan gunakan spasi.

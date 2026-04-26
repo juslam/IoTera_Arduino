@@ -37,6 +37,7 @@ class IoTeraDevice {
     String _deviceKey;
     static CommandCallback _cmdCallback;
     bool _streamStarted;
+    unsigned long _lastHeartbeat;
 
     WiFiClientSecure ssl_client;
     WiFiClientSecure stream_ssl_client;
