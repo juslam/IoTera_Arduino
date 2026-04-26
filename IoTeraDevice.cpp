@@ -7,6 +7,7 @@ IoTeraDevice::IoTeraDevice() :
     streamClient(stream_ssl_client, getNetwork(network)),
     user_auth("AIzaSyAEBVcrMZ4V7nyAF5xtAgCtCsrncdAuoD0", "mesin@iotera.com", "mesin12345") {
     _streamStarted = false;
+    _lastHeartbeat = 0;
 }
 
 void IoTeraDevice::begin(const char* ssid, const char* password, const char* deviceKey) {
@@ -43,6 +44,13 @@ void IoTeraDevice::loop() {
 
     if (!app.ready()) return;
 
+    // Heartbeat: Sinyal otomatis ke App bahwa alat ini masih hidup setiap 60 detik
+    if (millis() - _lastHeartbeat > 60000 || _lastHeartbeat == 0) {
+        _lastHeartbeat = millis();
+        String hbPath = "/device_status/" + _deviceKey + "/heartbeat";
+        Database.set<String>(aClient, hbPath, String(millis()));
+    }
+
     if (!_streamStarted) {
         String streamPath = "/configurations/" + _deviceKey + "/states";
         
@@ -70,7 +78,10 @@ void IoTeraDevice::streamCallback(AsyncResult &aResult) {
 }
 
 void IoTeraDevice::sendSensorData(String topic, String value) {
-    if (!app.ready()) return;
+    if (!app.ready()) {
+        Serial.println("Gagal mengirim: Firebase belum siap (Menunggu Autentikasi / Internet).");
+        return;
+    }
 
     // Ganti garis miring (/) dengan underscore (_) sesuai dengan logic di Flutter app
     String safeTopic = topic;
@@ -78,7 +89,13 @@ void IoTeraDevice::sendSensorData(String topic, String value) {
 
     // Perbarui state di RTDB, maka HP akan seketika langsung merespon
     String path = "/configurations/" + _deviceKey + "/states/" + safeTopic;
-    Database.set<String>(aClient, path.c_str(), value);
+    
+    Serial.print("Mengirim data [");
+    Serial.print(path);
+    Serial.print("] -> ");
+    Serial.println(value);
+
+    Database.set<String>(aClient, path, value);
 }
 
 void IoTeraDevice::setCommandCallback(CommandCallback callback) {
