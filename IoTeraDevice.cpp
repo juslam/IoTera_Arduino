@@ -63,6 +63,16 @@ void IoTeraDevice::loop() {
 }
 
 void IoTeraDevice::streamCallback(AsyncResult &aResult) {
+    // Deteksi jika terjadi error atau terputus pada Stream
+    if (aResult.isError()) {
+        Serial.println("⚠️ Stream Error/Disconnected: " + aResult.error().message());
+    }
+    
+    // Event info dari Firebase Client (berguna untuk melihat status Resume)
+    if (aResult.isEvent()) {
+        Serial.println("ℹ️ Stream Event: " + aResult.appEvent().message());
+    }
+
     if (aResult.available()) {
         RealtimeDatabaseResult &RTDB = aResult.to<RealtimeDatabaseResult>();
         if (RTDB.isStream()) {
@@ -96,6 +106,12 @@ void IoTeraDevice::sendSensorData(String topic, String value) {
     Serial.println(value);
 
     Database.set<String>(aClient, path, value);
+}
+
+void IoTeraDevice::sendPinState(String pin, String value) {
+    // Topik untuk pin secara konsisten menggunakan prefix "pin_" 
+    // agar sesuai dengan yang diharapkan oleh aplikasi mobile.
+    sendSensorData("pin_" + pin, value);
 }
 
 void IoTeraDevice::setCommandCallback(CommandCallback callback) {

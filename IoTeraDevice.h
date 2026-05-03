@@ -27,6 +27,9 @@ class IoTeraDevice {
     // Mengirim data sensor ke Dashboard Aplikasi
     void sendSensorData(String topic, String value);
     
+    // Mengirim status pin (misal: status tombol ON/OFF) ke Dashboard Aplikasi
+    void sendPinState(String pin, String value);
+
     // Mendaftarkan fungsi untuk menangani aksi tombol/slider dari Aplikasi
     void setCommandCallback(CommandCallback callback);
 

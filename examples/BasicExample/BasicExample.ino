@@ -32,6 +32,7 @@
 
 IoTeraDevice iotDevice;
 unsigned long previousMillis = 0;
+unsigned long lastWiFiCheck = 0;
 bool isLedOn = false; // Variabel untuk menyimpan status LED saat ini / Variable to store current LED state
 bool lastButtonState = HIGH; // Status tombol fisik sebelumnya (karena PULLUP, default HIGH) / Previous physical button state
 
@@ -106,11 +107,11 @@ void setup() {
 void loop() {
   // Pastikan WiFi selalu terhubung kembali jika tiba-tiba terputus
   // Ensure WiFi always reconnects if it suddenly disconnects
-  if (WiFi.status() != WL_CONNECTED) {
+  if (WiFi.status() != WL_CONNECTED && (millis() - lastWiFiCheck > 5000)) {
     Serial.println("Koneksi Wi-Fi terputus! Mencoba menyambung kembali... / Wi-Fi disconnected! Trying to reconnect...");
+    WiFi.disconnect();
     WiFi.reconnect();
-    delay(2000); // Tunggu sebentar agar tidak membebani siklus loop / Wait a moment to avoid overloading the loop cycle
-    return;      // Lewati eksekusi Firebase di bawahnya hingga WiFi pulih / Skip Firebase execution below until WiFi recovers
+    lastWiFiCheck = millis();
   }
 
   // Wajib dipanggil untuk menjaga koneksi dan mendengarkan stream Firebase
@@ -135,7 +136,8 @@ void loop() {
         
         // Kirim status terbaru (1 atau 0) ke Aplikasi agar UI Tombol di HP ikut berubah
         // Send the latest status (1 or 0) to the App so the App Button UI changes
-        iotDevice.sendSensorData("pin_D1", isLedOn ? "1" : "0");
+        // Menggunakan sendPinState() agar otomatis ditambahkan prefix "pin_" / Using sendPinState() to automatically add "pin_" prefix
+        iotDevice.sendPinState("D1", isLedOn ? "1" : "0");
       }
     }
   }

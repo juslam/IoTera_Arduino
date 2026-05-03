@@ -49,6 +49,7 @@ Berikut adalah struktur dasar untuk menghubungkan perangkat Anda ke platform IoT
 
 IoTeraDevice iotDevice;
 unsigned long previousMillis = 0;
+unsigned long lastWiFiCheck = 0;
 
 // Fungsi penerima perintah dari Aplikasi Mobile
 void onAppCommand(String topic, String payload) {
@@ -76,20 +77,28 @@ void setup() {
 
 void loop() {
   // Auto-reconnect WiFi jika terputus
-  if (WiFi.status() != WL_CONNECTED) {
+  if (WiFi.status() != WL_CONNECTED && (millis() - lastWiFiCheck > 5000)) {
+    Serial.println("Koneksi WiFi terputus, mencoba menghubungkan kembali...");
+    WiFi.disconnect();
     WiFi.reconnect();
-    delay(2000);
-    return;
+    lastWiFiCheck = millis();
   }
 
   // Wajib dipanggil untuk menjaga aliran data masuk (Stream)
   iotDevice.loop();
   
-  // Contoh pengiriman data sensor setiap 10 detik
+  // Contoh pengiriman data secara periodik (setiap 10 detik)
   if (millis() - previousMillis > 10000) {
     previousMillis = millis();
+
+    // 1. Mengirim data sensor umum (misal: suhu, kelembapan)
     float suhu = random(20, 35);
     iotDevice.sendSensorData("iotera/sensor/suhu", String(suhu));
+
+    // 2. Mengirim status pin (misal: status relay) kembali ke Aplikasi
+    // Gunakan sendPinState() agar konsisten dengan prefix "pin_" yang diharapkan aplikasi.
+    // bool isRelayOn = digitalRead(RELAY_PIN) == HIGH;
+    // iotDevice.sendPinState("D1", isRelayOn ? "1" : "0");
   }
 }
 ```
