@@ -68,10 +68,10 @@ void IoTeraDevice::streamCallback(AsyncResult &aResult) {
         Serial.println("⚠️ Stream Error/Disconnected: " + aResult.error().message());
     }
     
-    // Event info dari Firebase Client (berguna untuk melihat status Resume)
-    if (aResult.isEvent()) {
-        Serial.println("ℹ️ Stream Event: " + aResult.appEvent().message());
-    }
+    // Event info dari Firebase Client dikomentari karena isEvent() tidak didukung di versi ini
+    // if (aResult.isEvent()) {
+    //     Serial.println("ℹ️ Stream Event: " + aResult.appEvent().message());
+    // }
 
     if (aResult.available()) {
         RealtimeDatabaseResult &RTDB = aResult.to<RealtimeDatabaseResult>();
