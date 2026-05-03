@@ -80,6 +80,11 @@ void IoTeraDevice::streamCallback(AsyncResult &aResult) {
                 String topic = RTDB.dataPath();
                 if (topic.startsWith("/")) topic = topic.substring(1);
                 
+                // Otomatis hapus awalan "pin_" agar user bisa langsung mencocokkan nama asli (DX Improvement)
+                if (topic.startsWith("pin_")) {
+                    topic = topic.substring(4);
+                }
+
                 String payload = RTDB.to<String>();
                 _cmdCallback(topic, payload);
             }
