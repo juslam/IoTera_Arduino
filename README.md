@@ -49,7 +49,6 @@ Berikut adalah struktur dasar untuk menghubungkan perangkat Anda ke platform IoT
 
 IoTeraDevice iotDevice;
 unsigned long previousMillis = 0;
-unsigned long lastWiFiCheck = 0;
 
 // Fungsi penerima perintah dari Aplikasi Mobile
 void onAppCommand(String topic, String payload) {
@@ -76,16 +75,15 @@ void setup() {
 }
 
 void loop() {
-  // Auto-reconnect WiFi jika terputus
-  if (WiFi.status() != WL_CONNECTED && (millis() - lastWiFiCheck > 5000)) {
-    Serial.println("Koneksi WiFi terputus, mencoba menghubungkan kembali...");
-    WiFi.disconnect();
-    WiFi.reconnect();
-    lastWiFiCheck = millis();
-  }
-
+  // Reconnect WiFi non-blocking sudah ditangani di iotDevice.loop()
+  // sehingga proses user tetap jalan walau SSID/password salah.
   // Wajib dipanggil untuk menjaga aliran data masuk (Stream)
   iotDevice.loop();
+
+  if (!iotDevice.isConnected()) {
+    // WiFi belum nyambung: kerjakan tugas lokal di sini, jangan delay lama.
+    // return; // uncomment jika pengiriman sensor hanya saat online
+  }
   
   // Contoh pengiriman data secara periodik (setiap 10 detik)
   if (millis() - previousMillis > 10000) {

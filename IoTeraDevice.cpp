@@ -8,21 +8,21 @@ IoTeraDevice::IoTeraDevice() :
     user_auth("AIzaSyAEBVcrMZ4V7nyAF5xtAgCtCsrncdAuoD0", "mesin@iotera.com", "mesin12345") {
     _streamStarted = false;
     _lastHeartbeat = 0;
+    _lastWifiAttempt = 0;
 }
 
 void IoTeraDevice::begin(const char* ssid, const char* password, const char* deviceKey) {
     _deviceKey = String(deviceKey);
+    _ssid = String(ssid);
+    _password = String(password);
 
-    // 1. Koneksi ke WiFi
-    WiFi.begin(ssid, password);
-    Serial.print("Menghubungkan ke Wi-Fi");
-    while (WiFi.status() != WL_CONNECTED) {
-        Serial.print(".");
-        delay(300);
-    }
-    Serial.println("\nBerhasil terhubung ke Wi-Fi!");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
+    // 1. Koneksi ke WiFi (NON-BLOCKING: hanya trigger, tidak while-timeout)
+    WiFi.mode(WIFI_STA); // Set ESP agar hanya menjadi Station (Client), mematikan Access Point
+    WiFi.setAutoReconnect(true);
+    WiFi.disconnect();
+    WiFi.begin(_ssid.c_str(), _password.c_str());
+    _lastWifiAttempt = millis();
+    Serial.println("Menghubungkan ke Wi-Fi (non-blocking, proses lain tetap jalan)...");
 
     // Konfigurasi koneksi SSL/TLS yang Insecure
     ssl_client.setInsecure();
@@ -41,6 +41,22 @@ void IoTeraDevice::begin(const char* ssid, const char* password, const char* dev
 void IoTeraDevice::loop() {
     app.loop();
     Database.loop();
+
+    // WiFi belum nyambung (SSID salah / password salah / router mati):
+    // jangan block, beri kesempatan proses user lain, retry tiap 5 detik.
+    if (WiFi.status() != WL_CONNECTED) {
+        if (millis() - _lastWifiAttempt >= 5000) {
+            _lastWifiAttempt = millis();
+            Serial.print("WiFi belum terhubung (status=");
+            Serial.print(WiFi.status());
+            Serial.println("). Mencoba lagi, proses lain tetap jalan...");
+            WiFi.disconnect();
+            WiFi.begin(_ssid.c_str(), _password.c_str());
+        }
+        // Stream harus didaftarkan ulang setelah WiFi pulih
+        _streamStarted = false;
+        return;
+    }
 
     if (!app.ready()) return;
 
@@ -121,6 +137,19 @@ void IoTeraDevice::sendPinState(String pin, String value) {
 
 void IoTeraDevice::setCommandCallback(CommandCallback callback) {
     _cmdCallback = callback;
+}
+
+bool IoTeraDevice::isConnected() {
+    return WiFi.status() == WL_CONNECTED;
+}
+
+bool IoTeraDevice::waitForConnect(unsigned long timeoutMs) {
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < timeoutMs) {
+        delay(100);
+        yield();
+    }
+    return WiFi.status() == WL_CONNECTED;
 }
 
 String IoTeraDevice::parseJson(String jsonString, String path) {

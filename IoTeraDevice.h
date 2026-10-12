@@ -18,8 +18,14 @@ class IoTeraDevice {
   public:
     IoTeraDevice();
     
-    // Inisialisasi koneksi WiFi dan Firebase
+    // Inisialisasi koneksi WiFi dan Firebase (NON-BLOCKING: langsung return,
+    // koneksi ditunggu/di-retry di dalam loop() agar proses user tetap jalan)
     void begin(const char* ssid, const char* password, const char* deviceKey);
+
+    // Status koneksi WiFi, bisa dipakai user untuk fallback (misal AP-Portal)
+    bool isConnected();
+    // Helper blocking opsional bila user memang butuh menunggu (dengan yield)
+    bool waitForConnect(unsigned long timeoutMs);
     
     // Harus dipanggil di dalam fungsi void loop() Arduino
     void loop();
@@ -38,9 +44,12 @@ class IoTeraDevice {
 
   private:
     String _deviceKey;
+    String _ssid;
+    String _password;
     static CommandCallback _cmdCallback;
     bool _streamStarted;
     unsigned long _lastHeartbeat;
+    unsigned long _lastWifiAttempt;
 
     WiFiClientSecure ssl_client;
     WiFiClientSecure stream_ssl_client;

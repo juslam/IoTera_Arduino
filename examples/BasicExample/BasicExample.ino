@@ -32,7 +32,6 @@
 
 IoTeraDevice iotDevice;
 unsigned long previousMillis = 0;
-unsigned long lastWiFiCheck = 0;
 bool isLedOn = false; // Variabel untuk menyimpan status LED saat ini / Variable to store current LED state
 bool lastButtonState = HIGH; // Status tombol fisik sebelumnya (karena PULLUP, default HIGH) / Previous physical button state
 
@@ -105,18 +104,18 @@ void setup() {
 }
 
 void loop() {
-  // Pastikan WiFi selalu terhubung kembali jika tiba-tiba terputus
-  // Ensure WiFi always reconnects if it suddenly disconnects
-  if (WiFi.status() != WL_CONNECTED && (millis() - lastWiFiCheck > 5000)) {
-    Serial.println("Koneksi Wi-Fi terputus! Mencoba menyambung kembali... / Wi-Fi disconnected! Trying to reconnect...");
-    WiFi.disconnect();
-    WiFi.reconnect();
-    lastWiFiCheck = millis();
-  }
-
-  // Wajib dipanggil untuk menjaga koneksi dan mendengarkan stream Firebase
-  // Must be called to maintain connection and listen to Firebase stream
+  // Wajib dipanggil: urus WiFi reconnect (non-blocking) + stream Firebase.
+  // Reconnect WiFi sudah ditangani library tiap 5 detik, jadi proses user tetap jalan
+  // walau SSID/password salah atau router mati.
+  // Must be called: handles WiFi reconnect (non-blocking) + Firebase stream.
   iotDevice.loop();
+
+  // Contoh: proses lain tetap jalan walau WiFi belum nyambung
+  // Example: other tasks keep running even when WiFi is not connected
+  if (!iotDevice.isConnected()) {
+    // Di sini bisa blink LED / baca tombol / fallback AP-Portal. Jangan delay lama.
+    // Optional: Serial.println("Menunggu WiFi...");
+  }
 
   // --- CONTOH MEMBACA TOMBOL FISIK UNTUK SINKRONISASI KE APLIKASI ---
   // --- EXAMPLE OF READING PHYSICAL BUTTON TO SYNC WITH APP ---
