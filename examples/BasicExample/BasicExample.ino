@@ -27,11 +27,12 @@
 
 // Definisikan pin yang terhubung ke LED / Relay
 // Define the pin connected to the LED / Relay
-#define LED_PIN 2 // Ganti dengan D1 jika menggunakan NodeMCU ESP8266 / Change to D1 if using NodeMCU ESP8266
+#define LED_PIN 2 // GPIO2 = strapping pin ESP32: aman untuk LED kecil, tapi jika board gagal boot pindah ke pin lain (mis. 16). Ganti dengan D1 jika NodeMCU ESP8266 / Change to D1 if using NodeMCU ESP8266
 #define PHYSICAL_BUTTON_PIN 4 // Contoh pin untuk tombol fisik (misal D2 di NodeMCU) / Example pin for physical button (e.g. D2 on NodeMCU)
 
 IoTeraDevice iotDevice;
 unsigned long previousMillis = 0;
+unsigned long lastDebounceMs = 0; // Non-blocking debounce (pengganti delay) / Non-blocking debounce
 bool isLedOn = false; // Variabel untuk menyimpan status LED saat ini / Variable to store current LED state
 bool lastButtonState = HIGH; // Status tombol fisik sebelumnya (karena PULLUP, default HIGH) / Previous physical button state
 
@@ -45,9 +46,9 @@ void onAppCommand(String topic, String payload) {
   
   // Contoh: Jika Anda menambahkan widget tombol di aplikasi dengan pin "D1"
   // Example: If you add a button widget in the app with pin "D1"
-  // Menggunakan indexOf agar lebih aman terhadap format path Firebase (misal: "/pin_D1")
-  // Using indexOf to be safer against Firebase path formats (e.g., "/pin_D1")
-  if (topic.indexOf("pin_D1") != -1) {
+  // CATATAN v1.3+: library otomatis memotong prefix "pin_", jadi callback menerima "D1" (bukan "pin_D1")
+  // NOTE v1.3+: the library auto-strips the "pin_" prefix, so the callback receives "D1" (not "pin_D1")
+  if (topic == "D1") {
     if (payload == "1") {
       Serial.println("Sinyal diterima! Menyalakan LED. / Signal received! Turning on LED.");
       isLedOn = true;
@@ -64,7 +65,9 @@ void onAppCommand(String topic, String payload) {
   } 
   // Contoh jika menerima nilai dari widget Slider (misal: "0" hingga "100")
   // Example if receiving a value from a Slider widget (e.g., "0" to "100")
-  else if (topic.indexOf("lampu/kecerahan") != -1) {
+  // CATATAN: "/" pada nama topic diganti "_" oleh aplikasi+library, jadi "lampu/kecerahan" diterima sebagai "lampu_kecerahan"
+  // NOTE: "/" in topic names is replaced with "_" by the app+library, so "lampu/kecerahan" arrives as "lampu_kecerahan"
+  else if (topic.indexOf("lampu_kecerahan") != -1) {
     int nilaiSlider = payload.toInt(); // Konversi string payload menjadi angka (integer) / Convert payload string to integer
     Serial.println("Sinyal Slider diterima! / Slider signal received!");
     Serial.print("Nilai Kecerahan / Brightness Value: ");
@@ -91,6 +94,7 @@ void onAppCommand(String topic, String payload) {
 
 void setup() {
   Serial.begin(115200);
+  randomSeed(analogRead(0)); // Acak seed agar simulasi suhu tidak berulang tiap boot / Randomize simulation
   pinMode(LED_PIN, OUTPUT); // Set pin sebagai OUTPUT / Set pin as OUTPUT
   pinMode(PHYSICAL_BUTTON_PIN, INPUT_PULLUP); // Set pin sebagai INPUT dengan pull-up internal / Set pin as INPUT with internal pull-up
   
@@ -104,10 +108,9 @@ void setup() {
 }
 
 void loop() {
-  // Wajib dipanggil: urus WiFi reconnect (non-blocking) + stream Firebase.
-  // Reconnect WiFi sudah ditangani library tiap 5 detik, jadi proses user tetap jalan
-  // walau SSID/password salah atau router mati.
-  // Must be called: handles WiFi reconnect (non-blocking) + Firebase stream.
+  // Wajib dipanggil: urus WiFi reconnect (non-blocking) + stream Firebase + heartbeat otomatis 30 detik.
+  // Heartbeat ini yang membuat status di HP tampil "Online" (lihat device_status di Firebase).
+  // Must be called: handles WiFi reconnect (non-blocking) + Firebase stream + auto 30s heartbeat.
   iotDevice.loop();
 
   // Contoh: proses lain tetap jalan walau WiFi belum nyambung
@@ -117,27 +120,23 @@ void loop() {
     // Optional: Serial.println("Menunggu WiFi...");
   }
 
-  // --- CONTOH MEMBACA TOMBOL FISIK UNTUK SINKRONISASI KE APLIKASI ---
+  // --- CONTOH MEMBACA TOMBOL FISIK UNTUK SINKRONISASI KE APLIKASI (NON-BLOCKING DEBOUNCE) ---
   // --- EXAMPLE OF READING PHYSICAL BUTTON TO SYNC WITH APP ---
   bool currentButtonState = digitalRead(PHYSICAL_BUTTON_PIN);
-  
-  if (currentButtonState != lastButtonState) {
-    delay(50); // Debounce sederhana untuk menghilangkan noise mekanik / Simple debounce to eliminate mechanical noise
-    currentButtonState = digitalRead(PHYSICAL_BUTTON_PIN);
-    
-    if (currentButtonState != lastButtonState) {
-      lastButtonState = currentButtonState;
-      
-      if (currentButtonState == LOW) { // LOW karena kita menggunakan INPUT_PULLUP (ditekan = nyambung ke GND)
-        Serial.println("Tombol fisik ditekan! Sinkronisasi status ke Aplikasi...");
-        isLedOn = !isLedOn; // Balikkan status LED / Toggle LED state
-        digitalWrite(LED_PIN, isLedOn ? HIGH : LOW);
-        
-        // Kirim status terbaru (1 atau 0) ke Aplikasi agar UI Tombol di HP ikut berubah
-        // Send the latest status (1 or 0) to the App so the App Button UI changes
-        // Menggunakan sendPinState() agar otomatis ditambahkan prefix "pin_" / Using sendPinState() to automatically add "pin_" prefix
-        iotDevice.sendPinState("D1", isLedOn ? "1" : "0");
-      }
+
+  if (currentButtonState != lastButtonState && (millis() - lastDebounceMs > 50)) {
+    lastDebounceMs = millis();
+    lastButtonState = currentButtonState;
+
+    if (currentButtonState == LOW) { // LOW karena kita menggunakan INPUT_PULLUP (ditekan = nyambung ke GND)
+      Serial.println("Tombol fisik ditekan! Sinkronisasi status ke Aplikasi...");
+      isLedOn = !isLedOn; // Balikkan status LED / Toggle LED state
+      digitalWrite(LED_PIN, isLedOn ? HIGH : LOW);
+
+      // Kirim status terbaru (1 atau 0) ke Aplikasi agar UI Tombol di HP ikut berubah
+      // Send the latest status (1 or 0) to the App so the App Button UI changes
+      // Menggunakan sendPinState() agar otomatis ditambahkan prefix "pin_" / Using sendPinState() to automatically add "pin_" prefix
+      iotDevice.sendPinState("D1", isLedOn ? "1" : "0");
     }
   }
   

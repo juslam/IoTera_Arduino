@@ -50,6 +50,7 @@ class IoTeraDevice {
     bool _streamStarted;
     unsigned long _lastHeartbeat;
     unsigned long _lastWifiAttempt;
+    void _sendHeartbeat();
 
     WiFiClientSecure ssl_client;
     WiFiClientSecure stream_ssl_client;

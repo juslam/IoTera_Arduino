@@ -60,11 +60,9 @@ void IoTeraDevice::loop() {
 
     if (!app.ready()) return;
 
-    // Heartbeat: Sinyal otomatis ke App bahwa alat ini masih hidup setiap 60 detik
-    if (millis() - _lastHeartbeat > 60000 || _lastHeartbeat == 0) {
-        _lastHeartbeat = millis();
-        String hbPath = "/device_status/" + _deviceKey + "/heartbeat";
-        Database.set<String>(aClient, hbPath, String(millis()));
+    // Heartbeat adaptif tiap 30 detik saat idle (koneksi TLS persisten, beban MCU praktis nol)
+    if (millis() - _lastHeartbeat > 30000 || _lastHeartbeat == 0) {
+        _sendHeartbeat();
     }
 
     if (!_streamStarted) {
@@ -127,12 +125,24 @@ void IoTeraDevice::sendSensorData(String topic, String value) {
     Serial.println(value);
 
     Database.set<String>(aClient, path, value);
+
+    // Piggyback: ikut segarkan heartbeat saat kirim data (max 1x per 10 detik),
+    // sehingga alat yang aktif praktis nol tulis tambahan.
+    if (millis() - _lastHeartbeat > 10000) {
+        _sendHeartbeat();
+    }
 }
 
 void IoTeraDevice::sendPinState(String pin, String value) {
     // Topik untuk pin secara konsisten menggunakan prefix "pin_" 
     // agar sesuai dengan yang diharapkan oleh aplikasi mobile.
     sendSensorData("pin_" + pin, value);
+}
+
+void IoTeraDevice::_sendHeartbeat() {
+    _lastHeartbeat = millis();
+    String hbPath = "/device_status/" + _deviceKey + "/heartbeat";
+    Database.set<String>(aClient, hbPath, String(_lastHeartbeat));
 }
 
 void IoTeraDevice::setCommandCallback(CommandCallback callback) {

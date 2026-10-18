@@ -15,7 +15,13 @@
 - 🔌 **Mudah Digunakan (Easy to Use):** API yang sangat sederhana untuk inisialisasi WiFi dan Firebase.
 - ⚡ **Respon Cepat (Low Latency Stream):** Menerima perintah aksi (tombol/slider) dari aplikasi mobile IoTera secara instan.
 - 📡 **Pengiriman Data (Send Data):** Kirim nilai sensor ke dashboard aplikasi secara periodik dengan mudah.
+- 💓 **Heartbeat Online Otomatis:** Sinyal hidup tiap 30 detik saat idle + piggyback saat kirim data, sehingga status Online di HP akurat.
 - 🔄 **Auto-Reconnect:** Terintegrasi dengan penanganan stream Firebase yang tangguh saat koneksi terputus.
+
+## 🕘 Riwayat Versi / Changelog
+
+- **v1.3.2** — Perbaikan contoh & README: cocokkan topic tombol pakai `== "D1"` (bukan `indexOf("pin_D1")`), debounce non-blocking, `randomSeed()`.
+- **v1.3.1** — Heartbeat adaptif 30 detik + piggyback di `sendSensorData()`; threshold Online aplikasi 2 menit.
 
 ---
 
@@ -54,8 +60,10 @@ unsigned long previousMillis = 0;
 void onAppCommand(String topic, String payload) {
   Serial.println("Topic: " + topic + " | Payload: " + payload);
   
-  // Contoh jika HP mengirim perintah ke pin_D1
-  if (topic.indexOf("pin_D1") != -1) {
+  // Contoh jika HP mengirim perintah ke tombol pin "D1"
+  // (Library v1.3+ otomatis memotong prefix "pin_", jadi yang diterima adalah "D1".
+  //  Pakai == agar pin "D1" tidak ikut cocok dengan "D10"/"D11".)
+  if (topic == "D1") {
     if (payload == "1") {
       Serial.println("Menyalakan Relay/LED!");
     } else if (payload == "0") {
