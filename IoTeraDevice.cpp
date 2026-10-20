@@ -99,6 +99,12 @@ void IoTeraDevice::streamCallback(AsyncResult &aResult) {
                     topic = topic.substring(4);
                 }
 
+                // Abaikan event dump awal "/" (payload JSON object penuh),
+                // hanya teruskan event perubahan child yang sebenarnya.
+                if (topic.length() == 0) {
+                    return;
+                }
+
                 String payload = RTDB.to<String>();
                 _cmdCallback(topic, payload);
             }
